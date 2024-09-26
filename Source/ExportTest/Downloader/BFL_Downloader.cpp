@@ -12,11 +12,21 @@
 const FString UBFL_Downloader::UPLOAD_IMAGE_URL = TEXT("https://dev-dl.klippbox.com/api/contents/upload");
 
 void UBFL_Downloader::UploadImage(
-    const FString& SourceImagePath ,
+    const TArray<FString>& SourceImagePaths ,
     const FOnUploadImageComplete& OnComplete ,
     const FOnUploadImageFailed& OnFailed
 )
 {
+    // 최대 10개의 이미지만 허용
+    int32 MaxImages = 10;
+    int32 NumImages = FMath::Min(SourceImagePaths.Num() , MaxImages);
+    if (NumImages == 0)
+    {
+        // 에러 처리 - 이미지가 없음
+        OnFailed.ExecuteIfBound(EHttpErrorCode::BadRequest , TEXT("이미지가 제공되지 않았습니다."));
+        return;
+    }
+
     FHttpModule& HttpModule = FHttpModule::Get();
     TSharedRef<IHttpRequest , ESPMode::ThreadSafe> Request = HttpModule.CreateRequest();
 
@@ -40,11 +50,22 @@ void UBFL_Downloader::UploadImage(
             {
                 RequestContent.Append(FileContent);
             }
+            else
+            {
+                // 파일을 읽을 수 없는 경우 에러 처리
+                FString ErrorMessage = FString::Printf(TEXT("파일을 읽을 수 없습니다: %s") , *FilePath);
+                //OnFailed.ExecuteIfBound(EHttpErrorCode::BadRequest , ErrorMessage);
+                return;
+            }
             RequestContent.Append((uint8*)"\r\n" , 2);
         };
 
     // Add form fields
-    AddFileData("upload" , SourceImagePath);
+    for (int32 i = 0; i < NumImages; ++i)
+    {
+        FString Key = TEXT("upload");
+        AddFileData(Key , SourceImagePaths[i]);
+    }
 
     // Add closing boundary
     FString ClosingBoundary = FString::Printf(TEXT("--%s--\r\n") , *Boundary);

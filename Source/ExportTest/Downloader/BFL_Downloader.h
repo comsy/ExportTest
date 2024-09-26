@@ -22,10 +22,10 @@ class EXPORTTEST_API UBFL_Downloader : public UBlueprintFunctionLibrary
 
 public:
     UFUNCTION(BlueprintCallable , Category = "Upload" , meta = (
-        SourceImagePath = "C:/IMAGE/Image.png"
-        ))
+        SourceImagePaths = "C:/IMAGE/Image1.png, C:/IMAGE/Image2.png, ..."
+    ))
     static void UploadImage(
-        const FString& SourceImagePath ,
+        const TArray<FString>& SourceImagePaths ,
         const FOnUploadImageComplete& OnComplete ,
         const FOnUploadImageFailed& OnFailed);
 
